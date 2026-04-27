@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>십자 인수분해 퍼즐</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #F8F7F4;
+    --surface: #FFFFFF;
+    --surface2: #F1EFE8;
+    --border: #D3D1C7;
+    --border2: #B4B2A9;
+    --text: #1C1B19;
+    --text2: #5F5E5A;
+    --text3: #888780;
+    --blue: #2563EB;
+    --blue-bg: #EEF4FF;
+    --blue-border: #93B4F5;
+    --blue-text: #1853A6;
+    --green: #1A6E40;
+    --green-bg: #EAFAF0;
+    --green-border: #9FDDBF;
+    --red: #C0392B;
+    --red-bg: #FDECEA;
+    --red-border: #F09595;
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 2rem 1rem;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+    width: 100%;
+    max-width: 520px;
+  }
+
+  /* ── Header ── */
+  .hdr { text-align: center; margin-bottom: 1.5rem; }
+  .hdr h1 { font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.3px; margin-bottom: 4px; }
+  .hdr p { font-size: 13px; color: var(--text2); }
+
+  /* ── Stats ── */
+  .stats { display: flex; gap: 8px; justify-content: center; margin-bottom: 1.25rem; }
+  .stat { background: var(--surface2); border-radius: var(--radius); padding: 8px 18px; text-align: center; flex: 1; max-width: 110px; }
+  .stat-v { font-size: 20px; font-weight: 700; color: var(--text); font-family: 'JetBrains Mono', monospace; }
+  .stat-l { font-size: 11px; color: var(--text3); margin-top: 1px; }
+
+  /* ── Difficulty ── */
+  .diff { display: flex; gap: 6px; justify-content: center; margin-bottom: 1.5rem; }
+  .db { padding: 5px 14px; font-size: 12px; font-family: 'Noto Sans KR', sans-serif;
+        border-radius: 20px; border: 1px solid var(--border); background: transparent;
+        color: var(--text2); cursor: pointer; transition: all .15s; }
+  .db:hover { border-color: var(--border2); color: var(--text); }
+  .db.on { background: var(--text); color: #fff; border-color: var(--text); }
+
+  /* ── Coefficient display ── */
+  .coeff-row { display: flex; gap: 8px; justify-content: center; margin-bottom: 1.75rem; }
+  .coeff { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius);
+           padding: 10px 12px; text-align: center; min-width: 80px; }
+  .coeff.target { background: var(--blue-bg); border-color: var(--blue-border); }
+  .coeff-v { font-size: 26px; font-weight: 700; color: var(--text); font-family: 'JetBrains Mono', monospace; line-height: 1; }
+  .coeff.target .coeff-v { color: var(--blue-text); }
+  .coeff-l { font-size: 11px; color: var(--text3); margin-top: 4px; }
+
+  /* ── Cross area ── */
+  .cross-wrap { display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 1rem; }
+
+  .cross-area {
+    position: relative;
+    width: 280px;
+    height: 148px;
+    flex-shrink: 0;
+  }
+
+  .fi {
+    width: 46px; height: 36px;
+    font-size: 16px; font-weight: 700; text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    border-radius: var(--radius);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    outline: none;
+    position: absolute;
+    -moz-appearance: textfield;
+    transition: border-color .15s, background .15s;
+  }
+  .fi::-webkit-inner-spin-button, .fi::-webkit-outer-spin-button { -webkit-appearance: none; }
+  .fi:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
+  .fi.cor { border-color: var(--green); background: var(--green-bg); color: var(--green); }
+  .fi.err { animation: shk .35s; }
+  @keyframes shk {
+    0%,100% { transform: translateX(0); }
+    20% { transform: translateX(-5px); }
+    60% { transform: translateX(5px); }
+  }
+
+  /* positions: p=top-left, q=bottom-left, r=top-right, s=bottom-right */
+  /* cross area 280px wide, 148px tall
+     inputs 46×36. margin 16px each side.
+     p: left=16, top=10 → center (39, 28)
+     q: left=16, top=94 → center (39, 112)
+     r: left=218, top=10 → center (241, 28)
+     s: left=218, top=94 → center (241, 112)
+  */
+  #ip { left: 16px; top: 10px; }
+  #iq { left: 16px; top: 94px; }
+  #ir { left: 218px; top: 10px; }
+  #is { left: 218px; top: 94px; }
+
+  .var-label { position: absolute; font-size: 10px; color: var(--text3); width: 46px; text-align: center; }
+
+  .times-sign { position: absolute; font-size: 12px; color: var(--text3); }
+
+  /* ── Diagonal products ── */
+  .dpanel {
+    display: flex; flex-direction: column; gap: 5px;
+    font-size: 12px; color: var(--text2); min-width: 96px;
+  }
+  .dp-row { white-space: nowrap; }
+  .dp-val { font-weight: 700; color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 13px; }
+  .dp-line { border-top: 1px solid var(--border); margin: 3px 0; }
+  .dp-sum { font-size: 16px; font-weight: 700; font-family: 'JetBrains Mono', monospace; color: var(--text); }
+  .dp-sum.ok { color: var(--green); }
+  .dp-sum.bad { color: var(--red); }
+  .dp-hint { font-size: 11px; color: var(--text3); }
+
+  /* ── Validation badges ── */
+  .badges { display: flex; gap: 8px; justify-content: center; margin-bottom: 1.25rem; }
+  .badge {
+    font-size: 12px; padding: 5px 13px; border-radius: 20px;
+    border: 1px solid var(--border); background: var(--surface2);
+    color: var(--text2); white-space: nowrap; font-family: 'JetBrains Mono', monospace;
+    transition: all .15s;
+  }
+  .badge.ok { background: var(--green-bg); border-color: var(--green-border); color: var(--green); }
+  .badge.bad { background: var(--red-bg); border-color: var(--red-border); color: var(--red); }
+
+  /* ── Buttons ── */
+  .btn-check {
+    display: block; width: 100%; padding: 11px;
+    font-size: 15px; font-weight: 700; font-family: 'Noto Sans KR', sans-serif;
+    background: var(--blue); color: #fff; border: none;
+    border-radius: var(--radius); cursor: pointer;
+    transition: opacity .15s, transform .1s;
+    margin-bottom: .75rem;
+  }
+  .btn-check:hover { opacity: .88; }
+  .btn-check:active { transform: scale(.98); }
+
+  .feedback {
+    text-align: center; font-size: 13px; font-weight: 500;
+    min-height: 20px; margin-bottom: .75rem; color: var(--text2);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .feedback.ok { color: var(--green); }
+  .feedback.bad { color: var(--red); }
+
+  .btn-next {
+    display: none; margin: 0 auto;
+    padding: 8px 28px; font-size: 13px; font-family: 'Noto Sans KR', sans-serif;
+    background: transparent; border: 1px solid var(--border);
+    border-radius: var(--radius); color: var(--text); cursor: pointer;
+    transition: background .15s;
+  }
+  .btn-next:hover { background: var(--surface2); }
+
+  /* ── Progress dots ── */
+  .progress { display: flex; gap: 5px; justify-content: center; margin-bottom: 1.5rem; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border); transition: background .2s; }
+  .dot.done { background: var(--blue); }
+
+  /* ── Instructions toggle ── */
+  .instructions {
+    margin-top: 1.5rem; padding-top: 1.25rem;
+    border-top: 1px solid var(--border);
+  }
+  .instr-toggle {
+    background: none; border: none; cursor: pointer;
+    font-size: 12px; color: var(--text3); font-family: 'Noto Sans KR', sans-serif;
+    display: flex; align-items: center; gap: 4px; margin: 0 auto;
+  }
+  .instr-toggle:hover { color: var(--text2); }
+  .instr-body { display: none; margin-top: .75rem; }
+  .instr-body.open { display: block; }
+  .instr-body p { font-size: 12px; color: var(--text2); line-height: 1.7; margin-bottom: .4rem; }
+  .instr-body code { font-family: 'JetBrains Mono', monospace; font-size: 11px; background: var(--surface2); padding: 1px 5px; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="hdr">
+    <h1>십자 인수분해 퍼즐</h1>
+    <p>대각선 곱의 합이 x 계수가 되도록 네 칸을 채워보세요</p>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-v" id="sc">0</div><div class="stat-l">점수</div></div>
+    <div class="stat"><div class="stat-v" id="sk">0</div><div class="stat-l">연속</div></div>
+    <div class="stat"><div class="stat-v" id="sq">1</div><div class="stat-l">문제</div></div>
+  </div>
+
+  <div class="diff">
+    <button class="db on" onclick="setD('e',this)">쉬움 (a=1)</button>
+    <button class="db" onclick="setD('m',this)">보통 (a=2,3)</button>
+    <button class="db" onclick="setD('h',this)">어려움</button>
+  </div>
+
+  <div class="progress" id="prog"></div>
+
+  <div class="coeff-row">
+    <div class="coeff"><div class="coeff-v" id="va">?</div><div class="coeff-l">x² 계수</div></div>
+    <div class="coeff target"><div class="coeff-v" id="vb">?</div><div class="coeff-l">목표 (x 계수)</div></div>
+    <div class="coeff"><div class="coeff-v" id="vc">?</div><div class="coeff-l">상수항</div></div>
+  </div>
+
+  <div class="cross-wrap">
+    <div class="cross-area">
+
+      <!-- Variable labels -->
+      <div class="var-label" style="left:16px;top:0">p</div>
+      <div class="var-label" style="left:16px;top:132px">q</div>
+      <div class="var-label" style="left:218px;top:0">r</div>
+      <div class="var-label" style="left:218px;top:132px">s</div>
+
+      <!-- Inputs -->
+      <input class="fi" id="ip" type="number" oninput="upd()">
+      <input class="fi" id="iq" type="number" oninput="upd()">
+      <input class="fi" id="ir" type="number" oninput="upd()">
+      <input class="fi" id="is" type="number" oninput="upd()">
+
+      <!-- × signs between p&q and r&s -->
+      <div class="times-sign" style="left:36px;top:50%;transform:translateY(-50%)">×</div>
+      <div class="times-sign" style="left:238px;top:50%;transform:translateY(-50%)">×</div>
+
+      <!-- SVG diagonal lines
+           p box: left=16 top=10 w=46 h=36 → right edge x=62, bottom edge y=46
+           q box: left=16 top=94 w=46 h=36 → right edge x=62, top edge y=94
+           r box: left=218 top=10 w=46 h=36 → left edge x=218, bottom edge y=46
+           s box: left=218 top=94 w=46 h=36 → left edge x=218, top edge y=94
+           Lines run between box edges with 4px inset padding.
+      -->
+      <svg style="position:absolute;left:0;top:0;pointer-events:none"
+           viewBox="0 0 280 148" width="280" height="148">
+        <line x1="66" y1="50" x2="214" y2="90"
+              stroke="#B4B2A9" stroke-width="1.5" stroke-dasharray="5,4" opacity=".6"/>
+        <line x1="66" y1="90" x2="214" y2="50"
+              stroke="#B4B2A9" stroke-width="1.5" stroke-dasharray="5,4" opacity=".6"/>
+        <text x="140" y="73" text-anchor="middle" dominant-baseline="middle"
+              font-size="15" fill="#B4B2A9" opacity=".8">×</text>
+      </svg>
+    </div>
+
+    <!-- Right panel: diagonal products + sum -->
+    <div class="dpanel">
+      <div class="dp-row">p×s = <span class="dp-val" id="vps">?</span></div>
+      <div style="font-size:11px;color:var(--text3)">+</div>
+      <div class="dp-row">q×r = <span class="dp-val" id="vqr">?</span></div>
+      <div class="dp-line"></div>
+      <div class="dp-sum" id="vsum">= ?</div>
+      <div class="dp-hint" id="vhint">목표: ?</div>
+    </div>
+  </div>
+
+  <div class="badges">
+    <div class="badge" id="bpq">p × q = ?</div>
+    <div class="badge" id="brs">r × s = ?</div>
+  </div>
+
+  <button class="btn-check" onclick="chk()">확인</button>
+  <div class="feedback" id="fb"></div>
+  <button class="btn-next" id="nb" onclick="nxt()">다음 문제 →</button>
+
+  <div class="instructions">
+    <button class="instr-toggle" onclick="toggleInstr(this)">▸ 어떻게 하는 거예요?</button>
+    <div class="instr-body" id="instr">
+      <p>① <strong>p, q</strong>를 골라 <code>p×q = x²계수</code>가 되도록 왼쪽 두 칸에 입력해요.</p>
+      <p>② <strong>r, s</strong>를 골라 <code>r×s = 상수항</code>이 되도록 오른쪽 두 칸에 입력해요.</p>
+      <p>③ 대각선 곱의 합 <code>p×s + q×r</code>이 가운데 목표 숫자(x 계수)와 같으면 정답!</p>
+      <p>나중에 이걸 이용하면 이차식 <strong>(px + r)(qx + s)</strong> 로 인수분해할 수 있어요.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+const PP = {
+  e: [
+    {a:1,b:5,c:6},{a:1,b:7,c:12},{a:1,b:-5,c:6},{a:1,b:1,c:-6},
+    {a:1,b:-2,c:-8},{a:1,b:3,c:-10},{a:1,b:-7,c:12},{a:1,b:0,c:-9},
+    {a:1,b:-1,c:-12},{a:1,b:8,c:15}
+  ],
+  m: [
+    {a:2,b:7,c:3},{a:2,b:5,c:3},{a:2,b:3,c:-2},{a:3,b:7,c:2},
+    {a:2,b:-5,c:-3},{a:3,b:2,c:-1},{a:2,b:-7,c:3},{a:2,b:1,c:-3},
+    {a:3,b:-5,c:2},{a:2,b:-3,c:-2}
+  ],
+  h: [
+    {a:6,b:11,c:3},{a:6,b:-5,c:-6},{a:4,b:11,c:6},{a:6,b:13,c:-5},
+    {a:4,b:-7,c:3},{a:6,b:7,c:2},{a:4,b:4,c:-3},{a:6,b:-7,c:2},
+    {a:4,b:-13,c:3},{a:6,b:5,c:-4}
+  ]
+};
+
+let diff='e', pool=[], idx=0, score=0, streak=0, done=false;
+const g = id => document.getElementById(id);
+const gn = id => { const v = parseInt(g(id).value); return isNaN(v) ? null : v; };
+
+function setD(d, btn) {
+  diff = d;
+  document.querySelectorAll('.db').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  reset();
+}
+
+function shuffle(a) { return [...a].sort(() => Math.random() - .5); }
+
+function reset() {
+  pool = shuffle(PP[diff]);
+  idx = 0; score = 0; streak = 0; done = false;
+  g('sc').textContent = 0; g('sk').textContent = 0;
+  load();
+}
+
+function renderProgress() {
+  g('prog').innerHTML = pool.map((_, i) =>
+    `<div class="dot${i < idx ? ' done' : ''}"></div>`
+  ).join('');
+}
+
+function load() {
+  done = false;
+  const {a, b, c} = pool[idx];
+  g('va').textContent = a; g('vb').textContent = b; g('vc').textContent = c;
+  ['ip','iq','ir','is'].forEach(id => { g(id).value = ''; g(id).className = 'fi'; });
+  g('bpq').textContent = `p × q = ${a}`; g('bpq').className = 'badge';
+  g('brs').textContent = `r × s = ${c}`; g('brs').className = 'badge';
+  g('vps').textContent = '?'; g('vqr').textContent = '?';
+  g('vsum').textContent = '= ?'; g('vsum').className = 'dp-sum';
+  g('vhint').textContent = `목표: ${b}`;
+  g('fb').textContent = ''; g('fb').className = 'feedback';
+  g('nb').style.display = 'none';
+  g('sq').textContent = idx + 1;
+  renderProgress();
+  g('ip').focus();
+}
+
+function upd() {
+  const p=gn('ip'), q=gn('iq'), r=gn('ir'), s=gn('is');
+  const {a, b, c} = pool[idx];
+
+  if (p !== null && q !== null) {
+    const pq = p * q;
+    g('bpq').textContent = `p×q = ${pq}${pq === a ? ' ✓' : ' (목표: '+a+')'}`;
+    g('bpq').className = 'badge ' + (pq === a ? 'ok' : 'bad');
+  } else {
+    g('bpq').textContent = `p × q = ${a}`; g('bpq').className = 'badge';
+  }
+  if (r !== null && s !== null) {
+    const rs = r * s;
+    g('brs').textContent = `r×s = ${rs}${rs === c ? ' ✓' : ' (목표: '+c+')'}`;
+    g('brs').className = 'badge ' + (rs === c ? 'ok' : 'bad');
+  } else {
+    g('brs').textContent = `r × s = ${c}`; g('brs').className = 'badge';
+  }
+
+  g('vps').textContent = (p !== null && s !== null) ? p * s : '?';
+  g('vqr').textContent = (q !== null && r !== null) ? q * r : '?';
+
+  if (p !== null && q !== null && r !== null && s !== null) {
+    const sm = p * s + q * r;
+    g('vsum').textContent = `= ${sm}`;
+    g('vsum').className = 'dp-sum ' + (sm === b ? 'ok' : 'bad');
+  } else {
+    g('vsum').textContent = '= ?'; g('vsum').className = 'dp-sum';
+  }
+}
+
+function chk() {
+  if (done) return;
+  const p=gn('ip'), q=gn('iq'), r=gn('ir'), s=gn('is');
+  if ([p,q,r,s].some(v => v === null)) {
+    g('fb').textContent = '네 칸을 모두 입력해주세요.';
+    g('fb').className = 'feedback bad'; return;
+  }
+  const {a, b, c} = pool[idx];
+  const pqOk = p*q === a, rsOk = r*s === c, diagOk = p*s + q*r === b;
+  const ok = pqOk && rsOk && diagOk;
+
+  if (ok) {
+    score += (diff==='e' ? 10 : diff==='m' ? 20 : 30) + (streak >= 2 ? streak * 5 : 0);
+    streak++;
+    g('sc').textContent = score; g('sk').textContent = streak;
+    ['ip','iq','ir','is'].forEach(id => g(id).classList.add('cor'));
+    g('fb').textContent = streak >= 3 ? `🔥 ${streak}연속 정답!` : '정답!';
+    g('fb').className = 'feedback ok';
+    done = true;
+    if (idx < pool.length - 1) {
+      g('nb').style.display = 'block';
+    } else {
+      g('fb').textContent += '  🎉 전체 완료!';
+    }
+  } else {
+    streak = 0; g('sk').textContent = 0;
+    ['ip','iq','ir','is'].forEach(id => g(id).classList.add('err'));
+    setTimeout(() => ['ip','iq','ir','is'].forEach(id => g(id).classList.remove('err')), 380);
+    const msgs = [];
+    if (!pqOk) msgs.push(`p×q = ${p*q} ≠ ${a}`);
+    if (!rsOk) msgs.push(`r×s = ${r*s} ≠ ${c}`);
+    if (pqOk && rsOk && !diagOk) msgs.push(`대각합 ${p*s+q*r} ≠ ${b}`);
+    g('fb').textContent = msgs.join('   ');
+    g('fb').className = 'feedback bad';
+  }
+}
+
+function nxt() {
+  idx++;
+  if (idx < pool.length) load();
+}
+
+function toggleInstr(btn) {
+  const body = g('instr');
+  body.classList.toggle('open');
+  btn.textContent = body.classList.contains('open')
+    ? '▾ 어떻게 하는 거예요?'
+    : '▸ 어떻게 하는 거예요?';
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !done) chk();
+});
+
+reset();
+</script>
+</body>
+</html>
